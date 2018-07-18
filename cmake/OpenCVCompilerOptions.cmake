@@ -204,6 +204,10 @@ if(CMAKE_COMPILER_IS_GNUCXX)
     add_extra_compiler_option(-flto)
   endif()
 
+  if(ENABLE_OZ)
+    add_extra_compiler_option(-Oz)
+  endif()
+
   set(OPENCV_EXTRA_FLAGS_RELEASE "${OPENCV_EXTRA_FLAGS_RELEASE} -DNDEBUG")
   if(NOT " ${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_DEBUG} " MATCHES "-O")
     set(OPENCV_EXTRA_FLAGS_DEBUG "${OPENCV_EXTRA_FLAGS_DEBUG} -O0")

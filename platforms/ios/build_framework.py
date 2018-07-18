@@ -32,7 +32,8 @@ import glob, re, os, os.path, shutil, string, sys, argparse, traceback, multipro
 from subprocess import check_call, check_output, CalledProcessError
 
 IMAGEMETRICS_CMAKE_ARGS =[
-        "-DBUILD_opencv_world=ON" ,
+        "-DBUILD_opencv_world=NO" ,
+        "-DHAVE_opencv_ml=NO" ,
         "-DAPPLE_FRAMEWORK=ON" ,
         "-DBUILD_EXAMPLES=NO" ,
         "-DBUILD_TESTS=NO" ,
@@ -48,6 +49,10 @@ IMAGEMETRICS_CMAKE_ARGS =[
         "-DBUILD_opencv_gpu=NO" ,
         "-DBUILD_opencv_java=NO" ,
         "-DBUILD_opencv_androidcamera=NO" ,
+        "-DBUILD_opencv_videoio=NO" ,
+        "-DBUILD_opencv_videostab=NO" ,
+        "-DBUILD_opencv_stitching=NO" ,
+        "-DBUILD_opencv_python_bindings_generator=NO" ,
         "-DWITH_OPENNI=OFF" ,
         "-DWITH_OPENGL=OFF" ,
         "-DWITH_IMAGEIO=ON" ,
@@ -70,6 +75,8 @@ IMAGEMETRICS_CMAKE_ARGS =[
         "-DWITH_EIGEN=YES" ,
         "-DWITH_AVFOUNDATION=OFF" ,
         "-DENABLE_DYNAMIC_CUDA=OFF" ,
+        "-DENABLE_LTO=ON" ,
+        "-DENABLE_OZ=ON" ,
         "-DCUDA_HOST_COMPILATION_CPP=OFF" ,
         "-DCMAKE_C_FLAGS=\"-Wno-implicit-function-declaration\" " ,
         "-DCMAKE_CXX_FLAGS=\"-fvisibility=hidden -fvisibility-inlines-hidden -Os\" " ,
@@ -324,9 +331,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     b = iOSBuilder(args.opencv, args.contrib, args.dynamic, args.bitcodedisabled, args.without, args.eigenpath,
-        [
-            (["armv7s", "arm64"], "iPhoneOS"),
-        ] if os.environ.get('BUILD_PRECOMMIT', None) else
         [
             (["armv7", "armv7s", "arm64"], "iPhoneOS"),
             (["i386", "x86_64"], "iPhoneSimulator"),
