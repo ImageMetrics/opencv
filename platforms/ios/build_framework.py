@@ -31,6 +31,61 @@ from __future__ import print_function
 import glob, re, os, os.path, shutil, string, sys, argparse, traceback, multiprocessing
 from subprocess import check_call, check_output, CalledProcessError
 
+IMAGEMETRICS_CMAKE_ARGS =[
+        "-DBUILD_opencv_world=NO" ,
+        "-DHAVE_opencv_ml=NO" ,
+        "-DAPPLE_FRAMEWORK=ON" ,
+        "-DBUILD_EXAMPLES=NO" ,
+        "-DBUILD_TESTS=NO" ,
+        "-DBUILD_NEW_PYTHON_SUPPORT=NO" ,
+        "-DBUILD_PERF_TESTS=NO" ,
+        "-DBUILD_SHARED_LIBS=NO" ,
+        "-DBUILD_JPEG=NO" ,
+        "-DBUILD_OPENEXR=NO" ,
+        "-DBUILD_PNG=NO" ,
+        "-DBUILD_TIFF=NO" ,
+        "-DBUILD_JASPER=NO" ,
+        "-DBUILD_TBB=NO" ,
+        "-DBUILD_opencv_gpu=NO" ,
+        "-DBUILD_opencv_java=NO" ,
+        "-DBUILD_opencv_androidcamera=NO" ,
+        "-DBUILD_opencv_videoio=NO" ,
+        "-DBUILD_opencv_videostab=NO" ,
+        "-DBUILD_opencv_stitching=NO" ,
+        "-DBUILD_opencv_python_bindings_generator=NO" ,
+        "-DBUILD_opencv_objdetect=NO",
+        "-DBUILD_opencv_dnn=NO",
+        "-DBUILD_opencv_ml=NO",
+        "-DWITH_OPENNI=OFF" ,
+        "-DWITH_OPENGL=OFF" ,
+        "-DWITH_IMAGEIO=ON" ,
+        "-DWITH_NVCUVID=OFF" ,
+        "-DWITH_CUFFT=OFF" ,
+        "-DWITH_CUBLAS=OFF" ,
+        "-DWITH_CUDA=OFF" ,
+        "-DWITH_HALIDE=OFF" ,
+        "-DWITH_OPENCL=OFF" ,
+        "-DWITH_OPENEXR=OFF" ,
+        "-DWITH_JPEG=OFF" ,
+        "-DWITH_PNG=OFF" ,
+        "-DWITH_CAROTENE=OFF" ,
+        "-DWITH_WEBP=OFF" ,
+        "-DWITH_TIFF=OFF" ,
+        "-DWITH_JASPER=OFF" ,
+        "-DWITH_IPP=OFF" ,
+        "-DWITH_ITT=OFF" ,
+        "-DWITH_TBB=OFF" ,
+        "-DWITH_EIGEN=YES" ,
+        "-DWITH_AVFOUNDATION=OFF" ,
+        "-DENABLE_DYNAMIC_CUDA=OFF" ,
+        "-DENABLE_LTO=ON" ,
+        "-DENABLE_OZ=ON" ,
+        "-DCUDA_HOST_COMPILATION_CPP=OFF" ,
+        "-DCMAKE_C_FLAGS=\"-Wno-implicit-function-declaration\" " ,
+        "-DCMAKE_CXX_FLAGS=\"-fvisibility=hidden -fvisibility-inlines-hidden -Os\" " ,
+        "-DCMAKE_SHARED_LINKER_FLAGS=\"-Wl,--gc-sections\"  "]
+
+
 def execute(cmd, cwd = None):
     print("Executing: %s in %s" % (cmd, cwd), file=sys.stderr)
     retcode = check_call(cmd, cwd = cwd)
@@ -45,7 +100,7 @@ def getXCodeMajor():
     return 0
 
 class Builder:
-    def __init__(self, opencv, contrib, dynamic, bitcodedisabled, exclude, targets):
+    def __init__(self, opencv, contrib, dynamic, bitcodedisabled, exclude, eigenpath, targets):
         self.opencv = os.path.abspath(opencv)
         self.contrib = None
         if contrib:
@@ -58,6 +113,7 @@ class Builder:
         self.bitcodedisabled = bitcodedisabled
         self.exclude = exclude
         self.targets = targets
+        self.eigenpath = eigenpath
 
     def getBD(self, parent, t):
 
@@ -127,8 +183,9 @@ class Builder:
             "-GXcode",
             "-DAPPLE_FRAMEWORK=ON",
             "-DCMAKE_INSTALL_PREFIX=install",
+            "-DEIGEN_INCLUDE_PATH="+self.eigenpath,
             "-DCMAKE_BUILD_TYPE=Release",
-        ] + ([
+        ] + IMAGEMETRICS_CMAKE_ARGS + ([
             "-DBUILD_SHARED_LIBS=ON",
             "-DCMAKE_MACOSX_BUNDLE=ON",
             "-DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED=NO",
@@ -269,6 +326,7 @@ if __name__ == "__main__":
     folder = os.path.abspath(os.path.join(os.path.dirname(sys.argv[0]), "../.."))
     parser = argparse.ArgumentParser(description='The script builds OpenCV.framework for iOS.')
     parser.add_argument('out', metavar='OUTDIR', help='folder to put built framework')
+    parser.add_argument('--eigenpath', metavar='DIR', default=None, help='path to eigen third party')
     parser.add_argument('--opencv', metavar='DIR', default=folder, help='folder with opencv repository (default is "../.." relative to script location)')
     parser.add_argument('--contrib', metavar='DIR', default=None, help='folder with opencv_contrib repository (default is "None" - build only main framework)')
     parser.add_argument('--without', metavar='MODULE', default=[], action='append', help='OpenCV modules to exclude from the framework')
@@ -276,10 +334,7 @@ if __name__ == "__main__":
     parser.add_argument('--disable-bitcode', default=False, dest='bitcodedisabled', action='store_true', help='disable bitcode (enabled by default)')
     args = parser.parse_args()
 
-    b = iOSBuilder(args.opencv, args.contrib, args.dynamic, args.bitcodedisabled, args.without,
-        [
-            (["armv7s", "arm64"], "iPhoneOS"),
-        ] if os.environ.get('BUILD_PRECOMMIT', None) else
+    b = iOSBuilder(args.opencv, args.contrib, args.dynamic, args.bitcodedisabled, args.without, args.eigenpath,
         [
             (["armv7", "armv7s", "arm64"], "iPhoneOS"),
             (["i386", "x86_64"], "iPhoneSimulator"),
